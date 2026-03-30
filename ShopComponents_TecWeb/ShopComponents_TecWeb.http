@@ -1,0 +1,6 @@
+@ShopComponents_TecWeb_HostAddress = http://localhost:5114
+
+GET {{ShopComponents_TecWeb_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

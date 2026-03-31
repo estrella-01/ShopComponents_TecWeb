@@ -17,4 +17,9 @@ public class ProductoService : IProductoService
     {
         return await _repository.GetAllAsync();
     }
+
+    public async Task InsertAsync(Producto producto)
+    {
+        await _repository.InsertAsync(producto);
+    }
 }

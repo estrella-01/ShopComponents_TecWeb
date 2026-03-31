@@ -5,4 +5,5 @@ namespace ShopComponents.Services.Interfaces;
 public interface IProductoService
 {
     Task<IEnumerable<Producto>> GetAllAsync();
+    Task InsertAsync(Producto producto);
 }

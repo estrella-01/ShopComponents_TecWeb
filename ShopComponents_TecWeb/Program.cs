@@ -1,34 +1,30 @@
+﻿using Microsoft.EntityFrameworkCore;
+using ShopComponents.Infraestructure.Data;
+using ShopComponents.Core.Interfaces;
+using ShopComponents.Infrastructure.Repositories;
+using ShopComponents.Services.Interfaces;
+using ShopComponents.Services.Services;
 
-namespace ShopComponents_TecWeb
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddTransient<IProductoRepository, ProductoRepository>();
+builder.Services.AddTransient<IProductoService, ProductoService>();
 
-            // Add services to the container.
+// 🔌 CONEXIÓN A MYSQL
+var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
 
-            builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
+builder.Services.AddDbContext<SistemaDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-            var app = builder.Build();
+// Controllers
+builder.Services.AddControllers();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
+builder.Services.AddEndpointsApiExplorer();
 
-            app.UseHttpsRedirection();
+var app = builder.Build();
 
-            app.UseAuthorization();
+app.UseHttpsRedirection();
+app.UseAuthorization();
 
+app.MapControllers();
 
-            app.MapControllers();
-
-            app.Run();
-        }
-    }
-}
+app.Run();

@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="ShopComponents_TecWeb/ShopComponents_TecWeb.csproj" />
+  <Project Path="ShopComponents.Core/ShopComponents.Core.csproj" Id="bddcc1bf-6226-4de0-b7e8-015d24a9b8f5" />
+  <Project Path="ShopComponents.Infraestructure/ShopComponents.Infraestructure.csproj" Id="f066c2d7-441c-4503-bbd7-4e95050227a9" />
+  <Project Path="ShopComponents.Services/ShopComponents.Services.csproj" Id="c87c65cd-d4a9-4b19-88db-0bf9d1867b70" />
+  <Project Path="ShopComponents_TecWeb/ShopComponents_TecWeb.Api.csproj" />
 </Solution>

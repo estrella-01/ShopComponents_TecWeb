@@ -29,4 +29,21 @@ public class ProductoRepository : IProductoRepository
         _context.Productos.Add(producto);
         await _context.SaveChangesAsync();
     }
+
+    public async Task UpdateAsync(Producto producto)
+    {
+        _context.Productos.Update(producto);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var producto = await _context.Productos.FindAsync(id);
+
+        if (producto != null)
+        {
+            _context.Productos.Remove(producto);
+            await _context.SaveChangesAsync();
+        }
+    }
 }

@@ -9,12 +9,12 @@ namespace ShopComponents.Services.Services;
 public class ProductoService : IProductoService
 {
     private readonly IProductoRepository _repository;
-    private readonly SistemaDbContext _context;
+    private readonly IProformaRepository _proformaRepository;
 
-    public ProductoService(IProductoRepository repository, SistemaDbContext context)
+    public ProductoService(IProductoRepository repository, IProformaRepository proformaRepository)
     {
         _repository = repository;
-        _context = context;
+        _proformaRepository = proformaRepository;
     }
 
     public async Task<IEnumerable<Producto>> GetAllAsync()
@@ -60,8 +60,7 @@ public class ProductoService : IProductoService
             Total = total
         };
 
-        _context.Proformas.Add(proforma);
-        await _context.SaveChangesAsync();
+        await _proformaRepository.InsertAsync(proforma);
 
         return new
         {

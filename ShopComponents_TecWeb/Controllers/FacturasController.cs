@@ -1,25 +1,21 @@
-﻿using AutoMapper;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using ShopComponents.Core.DTOs;
-using ShopComponents.Core.Entities;
 using ShopComponents.Services.Interfaces;
 using ShopComponents_TecWeb.Api.Responses;
 
 namespace ShopComponents_TecWeb.Api.Controllers;
 
 [ApiController]
-[Route("api/productos")]
-public class ProductoController : ControllerBase
+[Route("api/facturas")]
+public class FacturasController : ControllerBase
 {
-    private readonly IProductoService _service;
-    private readonly IMapper _mapper;
-    private readonly IValidator<ProductoDto> _validator;
+    private readonly IFacturaService _service;
+    private readonly IValidator<FacturaDto> _validator;
 
-    public ProductoController(IProductoService service, IMapper mapper, IValidator<ProductoDto> validator)
+    public FacturasController(IFacturaService service, IValidator<FacturaDto> validator)
     {
         _service = service;
-        _mapper = mapper;
         _validator = validator;
     }
 
@@ -29,13 +25,12 @@ public class ProductoController : ControllerBase
         try
         {
             var data = await _service.GetAllAsync();
-            var dto = _mapper.Map<IEnumerable<ProductoDto>>(data);
 
-            return Ok(new ApiResponse<IEnumerable<ProductoDto>>
+            return Ok(new ApiResponse<IEnumerable<FacturaDto>>
             {
                 Success = true,
-                Data = dto,
-                Message = "Lista de productos"
+                Data = data,
+                Message = "Lista de facturas"
             });
         }
         catch (Exception ex)
@@ -61,16 +56,14 @@ public class ProductoController : ControllerBase
                 {
                     Success = false,
                     Data = null,
-                    Message = "Producto no encontrado"
+                    Message = "Factura no encontrada"
                 });
 
-            var dto = _mapper.Map<ProductoDto>(data);
-
-            return Ok(new ApiResponse<ProductoDto>
+            return Ok(new ApiResponse<FacturaDto>
             {
                 Success = true,
-                Data = dto,
-                Message = "Producto encontrado"
+                Data = data,
+                Message = "Factura encontrada"
             });
         }
         catch (Exception ex)
@@ -85,35 +78,34 @@ public class ProductoController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(ProductoDto dto)
+    public async Task<IActionResult> Create([FromBody] FacturaDto dto)
     {
         try
         {
-            // Se aplica la validación con ProductoValidator antes de procesar
             var validacion = await _validator.ValidateAsync(dto);
+
             if (!validacion.IsValid)
+            {
                 return BadRequest(new ApiResponse<string>
                 {
                     Success = false,
                     Data = null,
-                    Message = string.Join(", ", validacion.Errors.Select(e => e.ErrorMessage))
+                    Message = string.Join(" | ", validacion.Errors.Select(e => e.ErrorMessage))
                 });
+            }
 
-            var producto = _mapper.Map<Producto>(dto);
-            await _service.InsertAsync(producto);
+            var result = await _service.CreateAsync(dto);
 
-            var result = _mapper.Map<ProductoDto>(producto);
-
-            return Ok(new ApiResponse<ProductoDto>
+            return Ok(new ApiResponse<FacturaDto>
             {
                 Success = true,
                 Data = result,
-                Message = "Producto creado correctamente"
+                Message = "Factura creada correctamente"
             });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new ApiResponse<string>
+            return BadRequest(new ApiResponse<string>
             {
                 Success = false,
                 Data = null,
@@ -123,34 +115,34 @@ public class ProductoController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, ProductoDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] FacturaDto dto)
     {
         try
         {
             var validacion = await _validator.ValidateAsync(dto);
+
             if (!validacion.IsValid)
+            {
                 return BadRequest(new ApiResponse<string>
                 {
                     Success = false,
                     Data = null,
-                    Message = string.Join(", ", validacion.Errors.Select(e => e.ErrorMessage))
+                    Message = string.Join(" | ", validacion.Errors.Select(e => e.ErrorMessage))
                 });
+            }
 
-            var producto = _mapper.Map<Producto>(dto);
-            producto.Id = id;
+            var result = await _service.UpdateAsync(id, dto);
 
-            await _service.UpdateAsync(producto);
-
-            return Ok(new ApiResponse<ProductoDto>
+            return Ok(new ApiResponse<FacturaDto>
             {
                 Success = true,
-                Data = dto,
-                Message = "Producto actualizado correctamente"
+                Data = result,
+                Message = "Factura actualizada correctamente"
             });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new ApiResponse<string>
+            return BadRequest(new ApiResponse<string>
             {
                 Success = false,
                 Data = null,
@@ -166,41 +158,16 @@ public class ProductoController : ControllerBase
         {
             await _service.DeleteAsync(id);
 
-            return Ok(new ApiResponse<string>
+            return Ok(new ApiResponse<bool>
             {
                 Success = true,
-                Data = null,
-                Message = "Producto eliminado correctamente"
+                Data = true,
+                Message = "Factura eliminada correctamente"
             });
         }
         catch (Exception ex)
         {
             return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
-    }
-
-    [HttpPost("proforma")]
-    public async Task<IActionResult> CrearProforma(CrearProformaDto dto)
-    {
-        try
-        {
-            var result = await _service.CrearProforma(dto.ProductoId, dto.Cantidad);
-
-            return Ok(new ApiResponse<object>
-            {
-                Success = true,
-                Data = result,
-                Message = "Proforma generada"
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<string>
             {
                 Success = false,
                 Data = null,

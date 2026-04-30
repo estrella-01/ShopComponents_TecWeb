@@ -1,43 +1,46 @@
-﻿using Microsoft.EntityFrameworkCore;
-using ShopComponents.Infraestructure.Data;
+﻿using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.EntityFrameworkCore;
+using ShopComponents.Api.Middleware;
 using ShopComponents.Core.Interfaces;
-using ShopComponents.Infrastructure.Repositories;
+using ShopComponents.Infraestructure.Data;
+using ShopComponents.Infraestructure.Mappings;
+using ShopComponents.Infraestructure.Repositories;
 using ShopComponents.Services.Interfaces;
 using ShopComponents.Services.Services;
-using ShopComponents.Infrastructure.Mappings;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 using ShopComponents.Services.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddTransient<IProductoRepository, ProductoRepository>();
-builder.Services.AddTransient<IProductoService, ProductoService>();
-builder.Services.AddAutoMapper(typeof(ProductoProfile).Assembly);
-builder.Services.AddValidatorsFromAssemblyContaining<ProductoValidator>();
-builder.Services.AddControllers()
-    .AddFluentValidation();
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddDbContext<SistemaDbContext>(options =>
     options.UseMySql(
-        builder.Configuration.GetConnectionString("MySqlConnection"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("MySqlConnection"))
-    ));
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-// 🔌 CONEXIÓN A MYSQL
-var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
+builder.Services.AddAutoMapper(typeof(ShopProfile).Assembly);
 
-builder.Services.AddDbContext<SistemaDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddValidatorsFromAssemblyContaining<VentaDtoValidator>();
 
-// Controllers
-builder.Services.AddControllers();
+builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
+builder.Services.AddScoped<IDapperContext, DapperContext>();
 
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<IVentaRepository, VentaRepository>();
+builder.Services.AddScoped<IFacturaRepository, FacturaRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IVentaService, VentaService>();
+builder.Services.AddScoped<IFacturaService, FacturaService>();
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseHttpsRedirection();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

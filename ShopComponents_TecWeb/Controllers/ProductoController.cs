@@ -1,22 +1,23 @@
 ﻿using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using ShopComponents.Core.CustomEntities;
 using ShopComponents.Core.DTOs;
 using ShopComponents.Core.Entities;
 using ShopComponents.Services.Interfaces;
-using ShopComponents_TecWeb.Api.Responses;
+using ShopComponents.Services.Validators;
 
-namespace ShopComponents_TecWeb.Api.Controllers;
+namespace ShopComponents.Api.Controllers;
 
 [ApiController]
-[Route("api/productos")]
+[Route("api/[controller]")]
 public class ProductoController : ControllerBase
 {
     private readonly IProductoService _service;
     private readonly IMapper _mapper;
-    private readonly IValidator<ProductoDto> _validator;
+    private readonly ProductoValidator _validator;
 
-    public ProductoController(IProductoService service, IMapper mapper, IValidator<ProductoDto> validator)
+    public ProductoController(IProductoService service, IMapper mapper, ProductoValidator validator)
     {
         _service = service;
         _mapper = mapper;
@@ -24,188 +25,53 @@ public class ProductoController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> GetAll()
     {
-        try
-        {
-            var data = await _service.GetAllAsync();
-            var dto = _mapper.Map<IEnumerable<ProductoDto>>(data);
-
-            return Ok(new ApiResponse<IEnumerable<ProductoDto>>
-            {
-                Success = true,
-                Data = dto,
-                Message = "Lista de productos"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        var data = await _service.GetAllAsync();
+        var dto = _mapper.Map<IEnumerable<ProductoDto>>(data);
+        return Ok(new ApiResponse<IEnumerable<ProductoDto>>(dto));
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        try
-        {
-            var data = await _service.GetByIdAsync(id);
-
-            if (data == null)
-                return NotFound(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = "Producto no encontrado"
-                });
-
-            var dto = _mapper.Map<ProductoDto>(data);
-
-            return Ok(new ApiResponse<ProductoDto>
-            {
-                Success = true,
-                Data = dto,
-                Message = "Producto encontrado"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        var data = await _service.GetByIdAsync(id);
+        var dto = _mapper.Map<ProductoDto>(data);
+        return Ok(new ApiResponse<ProductoDto>(dto));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(ProductoDto dto)
+    public async Task<IActionResult> Create([FromBody] ProductoDto dto)
     {
-        try
-        {
-            // Se aplica la validación con ProductoValidator antes de procesar
-            var validacion = await _validator.ValidateAsync(dto);
-            if (!validacion.IsValid)
-                return BadRequest(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = string.Join(", ", validacion.Errors.Select(e => e.ErrorMessage))
-                });
+        var validation = await _validator.ValidateAsync(dto);
+        if (!validation.IsValid)
+            throw new ValidationException(validation.Errors);
 
-            var producto = _mapper.Map<Producto>(dto);
-            await _service.InsertAsync(producto);
+        var producto = _mapper.Map<Producto>(dto);
+        await _service.InsertAsync(producto);
 
-            var result = _mapper.Map<ProductoDto>(producto);
-
-            return Ok(new ApiResponse<ProductoDto>
-            {
-                Success = true,
-                Data = result,
-                Message = "Producto creado correctamente"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        var result = _mapper.Map<ProductoDto>(producto);
+        return Ok(new ApiResponse<ProductoDto>(result));
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, ProductoDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] ProductoDto dto)
     {
-        try
-        {
-            var validacion = await _validator.ValidateAsync(dto);
-            if (!validacion.IsValid)
-                return BadRequest(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = string.Join(", ", validacion.Errors.Select(e => e.ErrorMessage))
-                });
+        var validation = await _validator.ValidateAsync(dto);
+        if (!validation.IsValid)
+            throw new ValidationException(validation.Errors);
 
-            var producto = _mapper.Map<Producto>(dto);
-            producto.Id = id;
+        var producto = _mapper.Map<Producto>(dto);
+        producto.Id = id;
+        await _service.UpdateAsync(producto);
 
-            await _service.UpdateAsync(producto);
-
-            return Ok(new ApiResponse<ProductoDto>
-            {
-                Success = true,
-                Data = dto,
-                Message = "Producto actualizado correctamente"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        return Ok(new ApiResponse<ProductoDto>(dto));
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        try
-        {
-            await _service.DeleteAsync(id);
-
-            return Ok(new ApiResponse<string>
-            {
-                Success = true,
-                Data = null,
-                Message = "Producto eliminado correctamente"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
-    }
-
-    [HttpPost("proforma")]
-    public async Task<IActionResult> CrearProforma(CrearProformaDto dto)
-    {
-        try
-        {
-            var result = await _service.CrearProforma(dto.ProductoId, dto.Cantidad);
-
-            return Ok(new ApiResponse<object>
-            {
-                Success = true,
-                Data = result,
-                Message = "Proforma generada"
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        await _service.DeleteAsync(id);
+        return NoContent();
     }
 }

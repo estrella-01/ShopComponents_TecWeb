@@ -1,5 +1,9 @@
-﻿using ShopComponents.Core.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using ShopComponents.Core.Entities;
+using ShopComponents.Core.Interfaces;
 using ShopComponents.Infraestructure.Data;
+
+namespace ShopComponents.Infraestructure.Repositories;
 
 public class ProformaRepository : IProformaRepository
 {
@@ -10,9 +14,15 @@ public class ProformaRepository : IProformaRepository
         _context = context;
     }
 
-    public async Task InsertAsync(Proforma proforma)
-    {
-        _context.Proformas.Add(proforma);
-        await _context.SaveChangesAsync();
-    }
+    public async Task<IEnumerable<Proforma>> GetAllAsync()
+        => await _context.Proformas.Include(p => p.Cliente).ToListAsync();
+
+    public async Task<Proforma?> GetByIdAsync(int id)
+        => await _context.Proformas.Include(p => p.Cliente).FirstOrDefaultAsync(p => p.Id == id);
+
+    public async Task AddAsync(Proforma proforma)
+        => await _context.Proformas.AddAsync(proforma);
+
+    public void Delete(Proforma proforma)
+        => _context.Proformas.Remove(proforma);
 }

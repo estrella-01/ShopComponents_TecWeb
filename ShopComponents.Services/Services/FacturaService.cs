@@ -32,16 +32,36 @@ public class FacturaService : IFacturaService
 
     public async Task<FacturaDto> CreateAsync(FacturaDto dto)
     {
+        // Verificar que la venta exista
         var venta = await _unitOfWork.Ventas.GetByIdAsync(dto.VentaId);
         if (venta is null)
-            throw new BusinessException("No se puede emitir factura sin una venta existente.", 400);
+            throw new BusinessException("La venta asociada no existe.", 404);
 
         var entity = _mapper.Map<Factura>(dto);
 
-        await _unitOfWork.Facturas.AddAsync(entity);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            await _unitOfWork.Facturas.AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitAsync();
+            return _mapper.Map<FacturaDto>(entity);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
 
-        return _mapper.Map<FacturaDto>(entity);
+    public async Task DeleteAsync(int id)
+    {
+        var factura = await _unitOfWork.Facturas.GetByIdAsync(id);
+        if (factura is null)
+            throw new BusinessException("Factura no encontrada.", 404);
+
+        _unitOfWork.Facturas.Delete(factura);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<FacturaDto> UpdateAsync(int id, FacturaDto dto)
@@ -58,13 +78,4 @@ public class FacturaService : IFacturaService
         return _mapper.Map<FacturaDto>(entity);
     }
 
-    public async Task DeleteAsync(int id)
-    {
-        var entity = await _unitOfWork.Facturas.GetByIdAsync(id);
-        if (entity is null)
-            throw new BusinessException("La factura no existe.", 404);
-
-        _unitOfWork.Facturas.Delete(entity);
-        await _unitOfWork.SaveChangesAsync();
-    }
 }

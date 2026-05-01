@@ -1,178 +1,87 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using ShopComponents.Core.CustomEntities;
 using ShopComponents.Core.DTOs;
+using ShopComponents.Core.QueryFilters;
 using ShopComponents.Services.Interfaces;
-using ShopComponents_TecWeb.Api.Responses;
+using ShopComponents.Services.Validators;
 
-namespace ShopComponents_TecWeb.Api.Controllers;
+namespace ShopComponents.Api.Controllers;
 
+[Route("api/[controller]")]
 [ApiController]
-[Route("api/ventas")]
-public class VentasController : ControllerBase
+public class VentaController : ControllerBase
 {
-    private readonly IVentaService _service;
-    private readonly IValidator<VentaDto> _validator;
+    private readonly IVentaService _ventaService;
+    private readonly VentaDtoValidator _validator;
 
-    public VentasController(IVentaService service, IValidator<VentaDto> validator)
+    public VentaController(IVentaService ventaService, VentaDtoValidator validator)
     {
-        _service = service;
+        _ventaService = ventaService;
         _validator = validator;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> GetAll([FromQuery] VentaFilter? filter)
     {
-        try
-        {
-            var data = await _service.GetAllAsync();
+        var ventas = await _ventaService.GetAllAsync(filter);
+        var paged = PagedList<VentaDto>.Create(ventas, filter?.Page ?? 1, filter?.PageSize ?? 10);
 
-            return Ok(new ApiResponse<IEnumerable<VentaDto>>
-            {
-                Success = true,
-                Data = data,
-                Message = "Lista de ventas"
-            });
-        }
-        catch (Exception ex)
+        var pagination = new Pagination
         {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+            TotalCount = paged.TotalCount,
+            PageSize = paged.PageSize,
+            CurrentPage = paged.CurrentPage,
+            TotalPages = paged.TotalPages,
+            HasNextPage = paged.HasNextPage,
+            HasPreviousPage = paged.HasPreviousPage
+        };
+
+        var response = new ApiResponse<IEnumerable<VentaDto>>(paged)
+        {
+            Pagination = pagination
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        try
-        {
-            var data = await _service.GetByIdAsync(id);
+        var venta = await _ventaService.GetByIdAsync(id);
+        if (venta is null)
+            return NotFound(new ErrorResponse { Status = 404, Message = "Venta no encontrada." });
 
-            if (data == null)
-                return NotFound(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = "Venta no encontrada"
-                });
-
-            return Ok(new ApiResponse<VentaDto>
-            {
-                Success = true,
-                Data = data,
-                Message = "Venta encontrada"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        return Ok(new ApiResponse<VentaDto>(venta));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] VentaDto dto)
     {
-        try
-        {
-            var validacion = await _validator.ValidateAsync(dto);
+        var validation = await _validator.ValidateAsync(dto);
+        if (!validation.IsValid)
+            throw new ValidationException(validation.Errors);
 
-            if (!validacion.IsValid)
-            {
-                return BadRequest(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = string.Join(" | ", validacion.Errors.Select(e => e.ErrorMessage))
-                });
-            }
-
-            var result = await _service.CreateAsync(dto);
-
-            return Ok(new ApiResponse<VentaDto>
-            {
-                Success = true,
-                Data = result,
-                Message = "Venta creada correctamente"
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        var created = await _ventaService.CreateAsync(dto);
+        return Ok(new ApiResponse<VentaDto>(created));
     }
 
+ 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] VentaDto dto)
     {
-        try
-        {
-            var validacion = await _validator.ValidateAsync(dto);
+        var validation = await _validator.ValidateAsync(dto);
+        if (!validation.IsValid)
+            throw new ValidationException(validation.Errors);
 
-            if (!validacion.IsValid)
-            {
-                return BadRequest(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = string.Join(" | ", validacion.Errors.Select(e => e.ErrorMessage))
-                });
-            }
-
-            var result = await _service.UpdateAsync(id, dto);
-
-            return Ok(new ApiResponse<VentaDto>
-            {
-                Success = true,
-                Data = result,
-                Message = "Venta actualizada correctamente"
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        var updated = await _ventaService.UpdateAsync(id, dto);
+        return Ok(new ApiResponse<VentaDto>(updated));
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        try
-        {
-            await _service.DeleteAsync(id);
-
-            return Ok(new ApiResponse<bool>
-            {
-                Success = true,
-                Data = true,
-                Message = "Venta eliminada correctamente"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        await _ventaService.DeleteAsync(id);
+        return NoContent();
     }
 }

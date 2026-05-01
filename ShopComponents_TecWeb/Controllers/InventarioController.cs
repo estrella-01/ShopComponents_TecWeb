@@ -1,108 +1,63 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using ShopComponents.Core.CustomEntities;
 using ShopComponents.Core.DTOs;
+using ShopComponents.Core.QueryFilters;
 using ShopComponents.Services.Interfaces;
-using ShopComponents_TecWeb.Api.Responses;
+using ShopComponents.Services.Validators;
 
-namespace ShopComponents_TecWeb.Api.Controllers;
+namespace ShopComponents.Api.Controllers;
 
+[Route("api/[controller]")]
 [ApiController]
-[Route("api/inventario")]
 public class InventarioController : ControllerBase
 {
-    private readonly IInventarioService _service;
-    private readonly IValidator<InventarioDto> _validator;
+    private readonly IInventarioService _inventarioService;
+    private readonly InventarioDtoValidator _validator;
 
-    public InventarioController(IInventarioService service, IValidator<InventarioDto> validator)
+    public InventarioController(IInventarioService inventarioService, InventarioDtoValidator validator)
     {
-        _service = service;
+        _inventarioService = inventarioService;
         _validator = validator;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> GetAll([FromQuery] InventarioFilter? filter)
     {
-        try
-        {
-            var data = await _service.GetAllAsync();
+        var data = await _inventarioService.GetAllAsync(filter);
+        var paged = PagedList<InventarioDto>.Create(data, filter?.Page ?? 1, filter?.PageSize ?? 10);
 
-            return Ok(new ApiResponse<IEnumerable<InventarioDto>>
-            {
-                Success = true,
-                Data = data,
-                Message = "Lista de movimientos de inventario"
-            });
-        }
-        catch (Exception ex)
+        var response = new ApiResponse<IEnumerable<InventarioDto>>(paged)
         {
-            return StatusCode(500, new ApiResponse<string>
+            Pagination = new Pagination
             {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+                TotalCount = paged.TotalCount,
+                PageSize = paged.PageSize,
+                CurrentPage = paged.CurrentPage,
+                TotalPages = paged.TotalPages,
+                HasNextPage = paged.HasNextPage,
+                HasPreviousPage = paged.HasPreviousPage
+            }
+        };
+
+        return Ok(response);
     }
 
-    [HttpGet("producto/{productoId:int}")]
+    [HttpGet("producto/{productoId}")]
     public async Task<IActionResult> GetByProducto(int productoId)
     {
-        try
-        {
-            var data = await _service.GetByProductoIdAsync(productoId);
-
-            return Ok(new ApiResponse<IEnumerable<InventarioDto>>
-            {
-                Success = true,
-                Data = data,
-                Message = $"Movimientos del producto {productoId}"
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        var data = await _inventarioService.GetByProductoIdAsync(productoId);
+        return Ok(new ApiResponse<IEnumerable<InventarioDto>>(data));
     }
 
     [HttpPost]
     public async Task<IActionResult> RegistrarMovimiento([FromBody] InventarioDto dto)
     {
-        try
-        {
-            var validacion = await _validator.ValidateAsync(dto);
+        var validation = await _validator.ValidateAsync(dto);
+        if (!validation.IsValid)
+            throw new ValidationException(validation.Errors);
 
-            if (!validacion.IsValid)
-            {
-                return BadRequest(new ApiResponse<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = string.Join(" | ", validacion.Errors.Select(e => e.ErrorMessage))
-                });
-            }
-
-            await _service.RegistrarMovimientoAsync(dto);
-
-            return Ok(new ApiResponse<bool>
-            {
-                Success = true,
-                Data = true,
-                Message = "Movimiento registrado y stock actualizado"
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<string>
-            {
-                Success = false,
-                Data = null,
-                Message = ex.Message
-            });
-        }
+        await _inventarioService.RegistrarMovimientoAsync(dto);
+        return Ok(new ApiResponse<string>("Movimiento registrado correctamente."));
     }
 }

@@ -10,7 +10,7 @@ public class InventarioConfiguration : IEntityTypeConfiguration<Inventario>
     {
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("inventario");
+        entity.ToTable("inventarios");
 
         entity.HasIndex(e => e.ProductoId, "ProductoId");
 

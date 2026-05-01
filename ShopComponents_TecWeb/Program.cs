@@ -9,7 +9,6 @@ using ShopComponents.Services.Interfaces;
 using ShopComponents.Services.Services;
 using ShopComponents.Services.Validators;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<SistemaDbContext>(options =>

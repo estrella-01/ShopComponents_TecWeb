@@ -15,5 +15,14 @@ public class ShopProfile : Profile
         CreateMap<Proforma, ProformaDto>().ReverseMap();
         CreateMap<Detalleproforma, DetalleProformaDto>().ReverseMap();
         CreateMap<Usuario, UsuarioDto>().ReverseMap();
+
+        // Mantenimiento: fecha DateOnly <-> string
+        CreateMap<Mantenimiento, MantenimientoDto>()
+            .ForMember(dest => dest.Fecha,
+                opt => opt.MapFrom(src => src.Fecha.ToString("yyyy-MM-dd")));
+
+        CreateMap<MantenimientoDto, Mantenimiento>()
+            .ForMember(dest => dest.Fecha,
+                opt => opt.MapFrom(src => DateOnly.Parse(src.Fecha)));
     }
 }

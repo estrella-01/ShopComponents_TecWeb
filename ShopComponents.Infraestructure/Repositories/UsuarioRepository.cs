@@ -24,4 +24,11 @@ public class UsuarioRepository : IUsuarioRepository
         return await _context.Usuarios
             .FirstOrDefaultAsync(u => u.Email == email);
     }
+
+    // ← FALTABA ESTE MÉTODO - UsuarioService lo llama al registrar
+    public async Task AddAsync(Usuario usuario)
+    {
+        await _context.Usuarios.AddAsync(usuario);
+        await _context.SaveChangesAsync();
+    }
 }

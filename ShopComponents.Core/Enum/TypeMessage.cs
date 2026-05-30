@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace ShopComponents.Core.Enum;
 
-namespace ShopComponents.Core.Enum
+public enum TypeMessage
 {
-    internal class TypeMessage
-    {
-    }
+    success,
+    warning,
+    information,
+    error
 }

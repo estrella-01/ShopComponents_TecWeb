@@ -20,6 +20,8 @@ public partial class SistemaDbContext : DbContext
     public virtual DbSet<Proforma> Proformas { get; set; }
     public virtual DbSet<Usuario> Usuarios { get; set; }
     public virtual DbSet<Ventum> Venta { get; set; }
+    public virtual DbSet<Mantenimiento> Mantenimientos { get; set; } // ← NUEVO
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -31,8 +33,8 @@ public partial class SistemaDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ProductoConfiguration());
         modelBuilder.ApplyConfiguration(new ProformaConfiguration());
         modelBuilder.ApplyConfiguration(new InventarioConfiguration());
+        modelBuilder.ApplyConfiguration(new MantenimientoConfiguration()); // ← NUEVO
 
-        // Configuraciones inline para las que no tienen archivo propio
         modelBuilder.Entity<Ventum>(e => {
             e.ToTable("venta");
             e.HasKey(x => x.Id);

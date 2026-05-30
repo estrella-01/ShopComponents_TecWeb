@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShopComponents.Core.CustomEntities;
 using ShopComponents.Core.DTOs;
@@ -9,6 +10,7 @@ using ShopComponents.Services.Validators;
 
 namespace ShopComponents.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProductoController : ControllerBase

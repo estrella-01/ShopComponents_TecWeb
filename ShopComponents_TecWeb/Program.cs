@@ -8,6 +8,10 @@ using ShopComponents.Infrastructure.Repositories;
 using ShopComponents.Services.Interfaces;
 using ShopComponents.Services.Services;
 using ShopComponents.Services.Validators;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using ShopComponents.Core.CustomEntities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +36,14 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+// Password hashing
+builder.Services.Configure<PasswordOptions>(
+    builder.Configuration.GetSection("PasswordOptions"));
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
+
+// Servicios nuevos
+
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddScoped<IFacturaService, FacturaService>();
 builder.Services.AddScoped<IInventarioService, InventarioService>();
@@ -47,6 +59,26 @@ builder.Services.AddScoped<ProformaDtoValidator>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Authentication:Issuer"],
+        ValidAudience = builder.Configuration["Authentication:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Authentication:SecretKey"]!))
+    };
+});
 
 var app = builder.Build();
 

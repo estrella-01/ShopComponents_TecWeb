@@ -14,5 +14,6 @@ public class ShopProfile : Profile
         CreateMap<Factura, FacturaDto>().ReverseMap();
         CreateMap<Proforma, ProformaDto>().ReverseMap();
         CreateMap<Detalleproforma, DetalleProformaDto>().ReverseMap();
+        CreateMap<Usuario, UsuarioDto>().ReverseMap();
     }
 }

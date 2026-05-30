@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShopComponents.Core.CustomEntities;
 using ShopComponents.Core.DTOs;
@@ -7,6 +8,7 @@ using ShopComponents.Services.Validators;
 
 namespace ShopComponents.Api.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class ProformaController : ControllerBase
